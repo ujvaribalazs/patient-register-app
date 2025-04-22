@@ -94,12 +94,12 @@ public class EkgData {
     
     // Belső osztály a jel tárolására
     public static class Signal {
-        private String name;
-        private List<Double> values;
-        private double originVal;
-        private String originUnit;
-        private double scaleVal;
-        private String scaleUnit;
+        private final String name;
+        private final List<Double> values;
+        private final double originVal;
+        private final String originUnit;
+        private final double scaleVal;
+        private final String scaleUnit;
         
         public Signal(String name, List<Double> values, double originVal, String originUnit, double scaleVal, String scaleUnit) {
             this.name = name;

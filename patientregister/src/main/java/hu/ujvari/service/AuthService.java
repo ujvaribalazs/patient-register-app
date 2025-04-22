@@ -3,8 +3,24 @@ package hu.ujvari.service;
 import hu.ujvari.auth.LdapConnector;
 import hu.ujvari.data.User;
 
+/**
+ * Az AuthService osztály felelős a felhasználói hitelesítésért és jogosultságkezelésért.
+ * 
+ * Az osztály az LDAP-on keresztüli autentikációt valósítja meg, és kezeli az aktuálisan
+ * bejelentkezett felhasználó adatait, jogosultságait. Biztosítja a be- és kijelentkezési
+ * funkcionalitást, valamint lehetővé teszi a felhasználói jogosultságok és a betegadatokhoz
+ * való hozzáférés ellenőrzését.
+ * 
+ * Az osztály főbb funkciói:
+ * - Felhasználó hitelesítése LDAP-on keresztül
+ * - Aktuális felhasználó kezelése
+ * - Jogosultságok ellenőrzése
+ * - Betegadatokhoz való hozzáférés ellenőrzése
+ * 
+ */
+
 public class AuthService {
-    private LdapConnector ldapConnector;
+    private final LdapConnector ldapConnector;
     private User currentUser;
     
     public AuthService(LdapConnector ldapConnector) {
@@ -58,11 +74,20 @@ public class AuthService {
     /**
      * Ellenőrzi, hogy a felhasználó hozzáférhet-e egy adott beteg adataihoz
      */
-    public boolean hasAccessToPatient(String patientId) {
-        if (currentUser == null) {
-            return false;
+    public boolean hasAccessToPatient(User user, String patientId) {
+        if (user.isDoctor()) return true;
+
+        if ((user.isNurse() || user.isAssistant()) && user.hasPermission("VIEW_PATIENT")) {
+            return true;
         }
+
+        if (user.getRoles().contains("PATIENT")) {
+            return user.getUserId().equals(patientId);
+        }
+
         
-        return ldapConnector.hasAccessToPatient(currentUser, patientId);
+        
+
+        return false;
     }
 }

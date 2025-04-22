@@ -1,6 +1,10 @@
 package hu.ujvari.auth;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,24 +12,20 @@ import java.util.Map;
 import org.apache.directory.api.ldap.model.cursor.EntryCursor;
 import org.apache.directory.api.ldap.model.entry.Attribute;
 import org.apache.directory.api.ldap.model.entry.Entry;
+import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.apache.directory.api.ldap.model.message.ModifyRequest;
 import org.apache.directory.api.ldap.model.message.ModifyRequestImpl;
 import org.apache.directory.api.ldap.model.message.SearchScope;
 import org.apache.directory.api.ldap.model.name.Dn;
-//import org.apache.directory.api.ldap.model.password.PasswordUtil;
-import org.apache.directory.ldap.client.api.LdapConnection;
-import org.apache.directory.ldap.client.api.LdapNetworkConnection;
-//import org.apache.directory.api.util.Strings;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Base64;
+import org.apache.directory.ldap.client.api.LdapConnection; //interfész
+import org.apache.directory.ldap.client.api.LdapNetworkConnection; //az interfész implementációja
 
 import hu.ujvari.data.User;
 
 public class LdapConnector {
-    private String ldapHost;
-    private int ldapPort;
-    private String baseDn;
+    private final String ldapHost;
+    private final int ldapPort;
+    private final String baseDn;
     private LdapConnection connection;
 
     public LdapConnector(String ldapHost, int ldapPort, String baseDn) {
@@ -46,7 +46,7 @@ public class LdapConnector {
             try {
                 connection.unBind();
                 connection.close();
-            } catch (Exception e) {
+            } catch (IOException | LdapException e) {
                 System.err.println("Kapcsolat bezárása sikertelen: " + e.getMessage());
             }
         }
@@ -100,7 +100,14 @@ public class LdapConnector {
                 return user;
             }
 
+            
             Entry entry = connection.lookup(userDn);
+
+            /*
+             * az első (és ebben az esetben egyetlen) találatot adja vissza, mint Entry objektumot. 
+             * Ebben benne vannak azok az attribútum‑érték párok, amiket alapértelmezés szerint a szerver küld 
+             * (leggyakrabban minden, de van lehetőség csak bizonyos attribútumokat kérni).
+             */
 
             if (entry != null) {
                 // Betöltjük az LDAP-ból a patientId-t az employeeNumber mezőből
@@ -110,7 +117,7 @@ public class LdapConnector {
                     
                 } else {
                     System.out.println("employeeNumber lekérése sikertelen");
-                    user.setUserId(entry.get("cn").getString()); // fallback
+                    user.setUserId(entry.get("cn").getString());
                 }
 
                 // Full name (displayName vagy cn)
@@ -128,6 +135,16 @@ public class LdapConnector {
                 // Szerepkörök meghatározása az LDAP DN alapján
                 Dn dn = new Dn(userDn);
                 String ou = dn.size() > 1 ? dn.getRdn(1).getValue() : "";
+
+                /* Alternatív, robusztusabb megoldás:
+                 * String ou = "";
+                *  for (Rdn rdn : dn) {
+                *       if ("ou".equalsIgnoreCase(rdn.getType())) {
+                *           ou = rdn.getValue();
+                *           break;
+                *       }
+                *   }
+                */
 
                 List<String> roles = new ArrayList<>();
                 if (ou.equalsIgnoreCase("doctors")) roles.add("DOCTOR");
@@ -173,6 +190,15 @@ public class LdapConnector {
             String shaPassword = "{SHA}" + Base64.getEncoder().encodeToString(digest);
             
             // Módosítsuk a jelszót
+
+            /*
+            ldif forma:
+            dn: uid=felhasznalo,ou=Users,dc=peldadomain,dc=hu
+            changetype: modify
+            replace: userPassword
+            userPassword: újJelszó123
+            */
+
             ModifyRequest modReq = new ModifyRequestImpl();
             modReq.setName(new Dn(userDn));
             modReq.replace("userPassword", shaPassword);
@@ -182,13 +208,12 @@ public class LdapConnector {
             return true;
         } catch (Exception e) {
             System.err.println("Jelszómódosítási hiba: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
 
     
-
+    // érdemes lett volna talán átteni az AuthService-be
     private void setPermissionsBasedOnRoles(User user) {
         Map<String, Boolean> permissions = new HashMap<>();
         permissions.put("LOGIN", true);
@@ -214,7 +239,7 @@ public class LdapConnector {
         } else if (user.getRoles().contains("PATIENT")) {
             permissions.put("VIEW_PATIENT", true);
             permissions.put("EDIT_PATIENT", false);
-            permissions.put("VIEW_EKG", true); // ha szeretnéd
+            permissions.put("VIEW_EKG", true);
             permissions.put("ADD_EXAMINATION", false);
             permissions.put("EDIT_EXAMINATION", false);
         }
@@ -223,20 +248,5 @@ public class LdapConnector {
         user.setPermissions(permissions);
     }
 
-    public boolean hasAccessToPatient(User user, String patientId) {
-        if (user.isDoctor()) return true;
-
-        if ((user.isNurse() || user.isAssistant()) && user.hasPermission("VIEW_PATIENT")) {
-            return true;
-        }
-
-        if (user.getRoles().contains("PATIENT")) {
-            return user.getUserId().equals(patientId);
-        }
-
-        
-        
-
-        return false;
-    }
+    
 }

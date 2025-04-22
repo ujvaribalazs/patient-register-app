@@ -1,24 +1,24 @@
 package hu.ujvari.service;
 
-import hu.ujvari.auth.LdapConnector;
-import hu.ujvari.data.EkgData;
-import hu.ujvari.data.User;
-import hu.ujvari.db.existdb.EkgDbConnector;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import hu.ujvari.auth.LdapConnector;
+import hu.ujvari.data.EkgData;
+import hu.ujvari.data.User;
+import hu.ujvari.db.existdb.EkgDbConnector;
+
 public class EkgService {
     private final EkgDbConnector ekgDbConnector;
     private final AuthService authService;
-    private final LdapConnector ldapConnector;
+    
     
     public EkgService(EkgDbConnector ekgDbConnector, AuthService authService, LdapConnector ldapConnector) {
         this.ekgDbConnector = ekgDbConnector;
         this.authService = authService;
-        this.ldapConnector = ldapConnector;
+        
     }
     
     /**
@@ -35,7 +35,7 @@ public class EkgService {
             throw new SecurityException("Nincs jogosultsága az EKG adatok megtekintéséhez!");
         }
         
-        if (!ldapConnector.hasAccessToPatient(currentUser, patientId)) {
+        if (!authService.hasAccessToPatient(currentUser, patientId)) {
             throw new SecurityException("Nincs jogosultsága ennek a betegnek az EKG adataihoz!");
         }
         
@@ -58,7 +58,7 @@ public class EkgService {
         
         EkgData ekgData = ekgDbConnector.getEkgById(ekgId);
         
-        if (ekgData != null && !ldapConnector.hasAccessToPatient(currentUser, ekgData.getPatientId())) {
+        if (ekgData != null && !authService.hasAccessToPatient(currentUser, ekgData.getPatientId())) {
             throw new SecurityException("Nincs jogosultsága ennek a betegnek az EKG adataihoz!");
         }
         
@@ -79,7 +79,7 @@ public class EkgService {
             throw new SecurityException("Nincs jogosultsága EKG adatok mentéséhez!");
         }
         
-        if (!ldapConnector.hasAccessToPatient(currentUser, ekgData.getPatientId())) {
+        if (!authService.hasAccessToPatient(currentUser, ekgData.getPatientId())) {
             throw new SecurityException("Nincs jogosultsága ennek a betegnek az EKG adatait módosítani!");
         }
         

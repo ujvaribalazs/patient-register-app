@@ -1,13 +1,14 @@
 package hu.ujvari.data;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Examination {
     private String id; // MongoDB _id
-    private String betegID;
-    private String patientId;
-    private String vizsgalatIdopontja;
+    private String betegID; 
+    private String patientId; //eXistDB azonosító
+    private Date vizsgalatIdopontja;
     private String orvosID;
     private String vizsgalatTipusa;
     
@@ -33,7 +34,7 @@ public class Examination {
         this.tevekenysegek = new ArrayList<>();
     }
     
-    // Getterek és setterek...
+    // Getterek és setterek
     
     public List<Diagnozis> getDiagnozisok() {
         return diagnozisok;
@@ -91,7 +92,7 @@ public class Examination {
             this.leiras = leiras;
         }
         
-        // Getterek és setterek...
+        
     }
     
     public static class Gyogyszer {
@@ -131,7 +132,7 @@ public class Examination {
             this.utasitasok = utasitasok;
         }
         
-        // Getterek és setterek...
+    
     }
     
     public static class Tevekenyseg {
@@ -157,7 +158,7 @@ public class Examination {
             this.eredmeny = eredmeny;
         }
         
-        // Getterek és setterek...
+        
     }
     
     // Az egész MongoDB dokumentum visszaadása String formában
@@ -225,11 +226,11 @@ public class Examination {
         this.patientId = patientId;
     }
 
-    public String getVizsgalatIdopontja() {
-        return vizsgalatIdopontja;
+    public Date getVizsgalatIdopontja() {
+         return vizsgalatIdopontja; 
     }
 
-    public void setVizsgalatIdopontja(String vizsgalatIdopontja) {
+    public void setVizsgalatIdopontja(Date vizsgalatIdopontja) {
         this.vizsgalatIdopontja = vizsgalatIdopontja;
     }
 

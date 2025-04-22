@@ -6,7 +6,7 @@ import java.util.List;
 public class Patient {
     private String id; // MongoDB _id
     private String betegID;
-    private String patientId;
+    private String patientId; //eXistDB azonosító
     private String name;
     
     // Alapvető törzsadatok (leggyakrabban használt mezők)
@@ -31,7 +31,7 @@ public class Patient {
         this.rendszeresGyogyszerek = new ArrayList<>();
     }
     
-    // Getterek és setterek...
+    
     
     // Segédosztályok a listák elemeihez
     public static class Betegseg {
@@ -62,7 +62,7 @@ public class Patient {
             this.diagnozisIdopont = diagnozisIdopont;
         }
         
-        // Getterek és setterek...
+        
     }
     
     public static class Gyogyszer {
@@ -101,7 +101,7 @@ public class Patient {
             this.kezdesIdopontja = kezdesIdopontja;
         }
         
-        // Getterek és setterek...
+      
     }
     
     // Az egész MongoDB dokumentum visszaadása String formában

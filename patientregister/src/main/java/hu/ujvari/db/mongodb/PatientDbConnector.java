@@ -1,6 +1,7 @@
 package hu.ujvari.db.mongodb;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.bson.Document;
@@ -169,7 +170,9 @@ public class PatientDbConnector {
         // Krónikus betegségek kinyerése
         Document kronikusBetegsegek = (Document) doc.get("KronikusBetegsegek");
         if (kronikusBetegsegek != null) {
-            List<Document> betegsegList = (List<Document>) kronikusBetegsegek.get("Betegseg");
+            // Korábban unchecked cast-oltunk: (List<Document>) diagnozis.get(...), most típusbiztos 
+            //getList(...) metódust használunk
+            List<Document> betegsegList = (List<Document>) kronikusBetegsegek.getList("Betegseg", Document.class);
             if (betegsegList != null) {
                 for (Document betegseg : betegsegList) {
                     // Használjuk a konstruktort a setter metódusok helyett
@@ -186,7 +189,7 @@ public class PatientDbConnector {
         // Rendszeres gyógyszerek kinyerése
         Document rendszeresGyogyszerek = (Document) doc.get("RendszeresGyogyszerek");
         if (rendszeresGyogyszerek != null) {
-            List<Document> gyogyszerList = (List<Document>) rendszeresGyogyszerek.get("Gyogyszer");
+            List<Document> gyogyszerList = (List<Document>) rendszeresGyogyszerek.getList("Gyogyszer", Document.class);
             if (gyogyszerList != null) {
                 for (Document gyogyszer : gyogyszerList) {
                     // Használjuk a konstruktort a setter metódusok helyett
@@ -224,7 +227,9 @@ public class PatientDbConnector {
         
         examination.setBetegID(doc.getString("BetegID"));
         examination.setPatientId(doc.getString("patientId"));
-        examination.setVizsgalatIdopontja(doc.getString("VizsgalatIdopontja"));
+        // dátum mező Date-ként
+        Date vizsDate = doc.getDate("VizsgalatIdopontja");
+        examination.setVizsgalatIdopontja(vizsDate);
         examination.setOrvosID(doc.getString("OrvosID"));
         examination.setVizsgalatTipusa(doc.getString("VizsgalatTipusa"));
         
@@ -241,7 +246,7 @@ public class PatientDbConnector {
         // Diagnózisok kinyerése
         Document diagnozis = (Document) doc.get("Diagnozis");
         if (diagnozis != null) {
-            List<Document> diagnozisLista = (List<Document>) diagnozis.get("MegallapitottBetegseg");
+            List<Document> diagnozisLista = (List<Document>) diagnozis.getList("MegallapitottBetegseg", Document.class);
             if (diagnozisLista != null) {
                 for (Document d : diagnozisLista) {
                     Examination.Diagnozis diag = new Examination.Diagnozis();
@@ -256,7 +261,7 @@ public class PatientDbConnector {
         // Terápia és gyógyszerek kinyerése
         Document terapia = (Document) doc.get("Terapia");
         if (terapia != null) {
-            List<Document> gyogyszerList = (List<Document>) terapia.get("Gyogyszer");
+            List<Document> gyogyszerList = (List<Document>) terapia.getList("Gyogyszer", Document.class);
             if (gyogyszerList != null) {
                 for (Document gy : gyogyszerList) {
                     Examination.Gyogyszer gyogyszer = new Examination.Gyogyszer();
@@ -275,7 +280,7 @@ public class PatientDbConnector {
         // Tevékenységek kinyerése
         Document tevekenysegek = (Document) doc.get("Tevekenysegek");
         if (tevekenysegek != null) {
-            List<Document> tevekenysegList = (List<Document>) tevekenysegek.get("Tevekenyseg");
+            List<Document> tevekenysegList = (List<Document>) tevekenysegek.getList("Tevekenyseg", Document.class);
             if (tevekenysegList != null) {
                 for (Document t : tevekenysegList) {
                     Examination.Tevekenyseg tevekenyseg = new Examination.Tevekenyseg();

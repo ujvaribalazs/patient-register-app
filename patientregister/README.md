@@ -26,6 +26,8 @@ This is a JavaFX-based desktop application designed to manage patients, their me
 
 ## Project Structure
 
+
+```
 src/ 
 ├── auth/ # LDAP connector
 ├── model/ # Data models (Patient, Examination, EkgData, etc.) 
@@ -33,7 +35,7 @@ src/
 ├── db/ # Database connectors (MongoDB, eXist-db) 
 └── ui/ # JavaFX windows and forms
 
-
+```
 ## Getting Started
 
 To run the application:

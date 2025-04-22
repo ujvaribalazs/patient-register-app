@@ -18,12 +18,14 @@ public class PatientRegisterApplication {
         
          // Szolgáltatások példányosítása
         AuthService authService = new AuthService(ldapConnector);
-        PatientService patientService = new PatientService(ldapConnector, patientDbConnector, authService, ekgDbConnector);
+        PatientService patientService = new PatientService(patientDbConnector, authService, ekgDbConnector);
 
         // LoginWindow példányosítása és beállítása
+        // A service‐példányok „átadása” a LoginWindow osztálynak
         LoginWindow.setStaticAuthService(authService);
         LoginWindow.setStaticPatientService(patientService);
         LoginWindow.setStaticLdapConnector(ldapConnector);
+        // A JavaFX runtime indítása, ami létrehozza a LoginWindow példányt
         Application.launch(LoginWindow.class); 
         
         // GUI inicializálása és indítása

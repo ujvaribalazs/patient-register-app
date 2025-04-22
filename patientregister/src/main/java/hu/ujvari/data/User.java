@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public class User {
-    private String userId;
+    private String userId; //LDAP employeeNumber
     private String username;
     private String fullName;
     private List<String> roles;
@@ -58,7 +58,7 @@ public class User {
         return new HashMap<>(permissions);
     }
 
-    // Setterek
+    
     public void setUserId(String userId) {
         this.userId = userId;
     }

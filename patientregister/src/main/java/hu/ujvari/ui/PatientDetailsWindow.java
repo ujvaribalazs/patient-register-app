@@ -12,11 +12,8 @@ import javafx.stage.Stage;
 
 public class PatientDetailsWindow {
     private final Patient patient;
-    private final PatientService patientService;
-
     public PatientDetailsWindow(Patient patient, PatientService patientService) {
         this.patient = patient;
-        this.patientService = patientService;
     }
 
     public void show() {

@@ -22,6 +22,11 @@ import javafx.stage.Stage;
 
 public class LoginWindow extends Application {
 
+    // A JavaFX a LoginWindow példányát reflexióval hozza létre, 
+    // ezért a main() előtt statikus mezőkön átadjuk a service-eket,
+    // majd az init() során ezekből töltjük fel az instance-mezőket, 
+    // hogy a futtatópéldány is hozzáférjen a függőségekhez.
+
     private static AuthService staticAuthService;
     private static PatientService staticPatientService;
     private static LdapConnector staticLdapConnector;

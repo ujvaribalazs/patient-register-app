@@ -1,24 +1,30 @@
 package hu.ujvari.db.existdb;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.exist.xmldb.EXistResource;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Database;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceIterator;
 import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
 
@@ -39,7 +45,7 @@ public class EkgDbConnector {
      * @param uri eXist-DB URI (pl. "xmldb:exist://localhost:8080/exist/xmlrpc")
      * @param username Felhasználónév
      * @param password Jelszó
-     * @param collection Gyűjtemény elérési útja (pl. "/db/ekgdata")
+     * @param collection Gyűjtemény elérési útja (pl. "/db/ekgData")
      */
     public EkgDbConnector(String uri, String username, String password, String collection) {
         this.uri = uri;
@@ -49,12 +55,21 @@ public class EkgDbConnector {
         
         try {
             // XMLDB driver inicializálása
-            Class<?> cl = Class.forName(driver);
-            Database database = (Database) cl.newInstance();
+            Class<?> cl = Class.forName(driver); //csak futási időben derül ki a driver változó értékéből a class objektum típusa
+            Database database = (Database) cl.getDeclaredConstructor().newInstance();
+            /*
+             * cl egy Class objektum, ami az org.exist.xmldb.DatabaseImpl osztályt reprezentálja
+             * database egy konkrét példány ebből a driver osztályból
+             * A kasztolás (Database) szükséges, mert a newInstance() Object típust ad vissza
+             *
+             * A wildcard használata itt rugalmasságot biztosít - 
+             * különböző adatbázis implementációkat is betölthetünk ugyanezzel a kóddal, 
+             * ha változik a driver értéke.
+             */
             database.setProperty("create-database", "true");
-            DatabaseManager.registerDatabase(database);
+            DatabaseManager.registerDatabase(database); // driver regisztrálása - driver: hasonló egy proxy objektumhoz
             System.out.println("eXist-DB kapcsolat létrehozva: " + uri + collection);
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException | XMLDBException e) {
             System.err.println("Hiba az eXist-DB kapcsolat inicializálásakor: " + e.getMessage());
         }
     }
@@ -89,7 +104,7 @@ public class EkgDbConnector {
                 ((EXistResource) res).freeResources();
             }
             
-        } catch (Exception e) {
+        } catch (XMLDBException e) {
             System.err.println("Hiba az eXist-DB lekérdezésekor: " + e.getMessage());
         }
         System.out.println("Lekérdezett EKG-k száma: " + ekgList.size());
@@ -116,7 +131,7 @@ public class EkgDbConnector {
                 return parseEkgXml(xmlContent);
             }
             
-        } catch (Exception e) {
+        } catch (XMLDBException e) {
             System.err.println("Hiba az EKG lekérdezésekor: " + e.getMessage());
         }
         
@@ -148,7 +163,7 @@ public class EkgDbConnector {
             System.out.println("EKG adatok mentve: " + ekgData.getEkgId());
             return true;
             
-        } catch (Exception e) {
+        } catch (XMLDBException e) {
             System.err.println("Hiba az EKG mentésekor: " + e.getMessage());
             return false;
         }
@@ -157,6 +172,11 @@ public class EkgDbConnector {
         
     /**
      * EkgData objektum átalakítása XML-lé
+     * A normál String objektumok Java-ban immutábilisak (nem módosíthatók)
+     * Ha String konkatenációt (+ operátor) használnánk, minden egyes művelet új 
+     * String objektumot hozna létre a memóriában.
+     * A StringBuilder egy módosítható puffert használ, így nem hoz létre új objektumokat 
+     * minden egyes összekapcsolásnál.
      */
     private String createEkgXml(EkgData ekgData) {
         StringBuilder xml = new StringBuilder();
@@ -193,6 +213,10 @@ public class EkgDbConnector {
     private void extractSignalsFromXml(EkgData ekgData) {
         try {
             String xmlContent = ekgData.getXmlContent();
+            /*
+             * Az EkgData osztályban: xmlContent = egy String, ami XML szöveget tartalmaz
+             * A feldolgozás során: ezt a String-et alakítjuk át XML dokumentummá a DOM parser segítségével
+             */
             
             // XML értelmezése
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -225,6 +249,7 @@ public class EkgDbConnector {
                         Element scaleElement = (Element) valueElement.getElementsByTagName("scale").item(0);
                         Element digitsElement = (Element) valueElement.getElementsByTagName("digits").item(0);
                         
+                        
                         if (originElement == null || scaleElement == null || digitsElement == null) continue;
                         
                         double originVal = Double.parseDouble(originElement.getAttribute("value"));
@@ -233,11 +258,11 @@ public class EkgDbConnector {
                         double scaleVal = Double.parseDouble(scaleElement.getAttribute("value"));
                         String scaleUnit = scaleElement.getAttribute("unit");
                         
-                        String digitsText = digitsElement.getTextContent().trim();
+                        String digitsText = digitsElement.getTextContent().trim(); ////a trim() eltávolítja a whitespace karaktereket (szóköz, tabulátor, újsor stb.) a String elejéről és végéről.
                         List<Double> values = new ArrayList<>();
-                        for (String token : digitsText.split("\\s+")) {
+                        for (String token : digitsText.split("\\s+")) { // "darabold fel a Stringet egy vagy több whitespace karakternél"
                             try {
-                                values.add(Double.parseDouble(token));
+                                values.add(Double.valueOf(token));
                             } catch (NumberFormatException ignored) {}
                         }
                         
@@ -250,7 +275,7 @@ public class EkgDbConnector {
             ekgData.setSignals(signals);
             System.out.println("Beolvasott elvezetések száma: " + signals.size());
             
-        } catch (Exception e) {
+        } catch (IOException | NumberFormatException | ParserConfigurationException | DOMException | SAXException e) {
             System.err.println("Hiba az EKG jelek kinyerésekor: " + e.getMessage());
         }
     }

@@ -1,7 +1,7 @@
 package hu.ujvari.ui;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 
 import hu.ujvari.data.Examination;
 import hu.ujvari.data.Patient;
@@ -77,7 +77,7 @@ public class ExaminationFormWindow {
                 exam.setBetegID(patient.getBetegID());
                 exam.setVizsgalatTipusa(vizsgalatTipusField.getText());
                 exam.setOrvosID(orvosIdField.getText());
-                exam.setVizsgalatIdopontja(LocalDateTime.now().toString());
+                exam.setVizsgalatIdopontja(new Date());
 
                 exam.setKardiovaszkularis(kardiovaszkularisArea.getText());
                 exam.setPulmonalis(pulmonalisArea.getText());
@@ -99,7 +99,7 @@ public class ExaminationFormWindow {
                 alert.showAndWait();
 
                 stage.close();
-            } catch (Exception ex) {
+            } catch (SecurityException ex) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Hiba");
                 alert.setHeaderText("Nem sikerült a vizsgálat mentése");

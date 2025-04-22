@@ -1,5 +1,6 @@
 package hu.ujvari.ui;
 
+import java.util.Arrays;
 import java.util.List;
 
 import hu.ujvari.data.Examination;
@@ -24,13 +25,23 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+/*
+ * MainWindow osztály:
+ * - Felelős a fő JavaFX ablak felépítéséért és megjelenítéséért.
+ * - AuthService segítségével ellenőrzi a bejelentkezett felhasználót.
+ * - Menüsorban biztosít lehetőségeket (kilépés, betegek listázása, vizsgálatok, EKG, kijelentkezés).
+ * - Középen egy TableView mutatja a betegek listáját, alul státuszsor a felhasználó adataival.
+ * - A show(Stage) hívásakor inicializálja a UI-t, majd loadPatients() segítségével betölti és megjeleníti a
+ *   betegek adatait a PatientService hívásain keresztül.
+ */
+
 public class MainWindow {
 
     private final AuthService authService;
     private PatientService patientService;
 
-    private TableView<Patient> patientTable = new TableView<>();
-    private ObservableList<Patient> patientData = FXCollections.observableArrayList();
+    private final TableView<Patient> patientTable = new TableView<>();
+    private final ObservableList<Patient> patientData = FXCollections.observableArrayList();
 
     public MainWindow(AuthService authService) {
         this.authService = authService;
@@ -40,12 +51,11 @@ public class MainWindow {
         User currentUser = authService.getCurrentUser();
         if (currentUser == null) {
             LoginWindow loginWindow = new LoginWindow();
-            //loginWindow.setAuthService(authService);
             loginWindow.start(stage);
             return;
         }
 
-        stage.setTitle("Orvosi Rendszer - " + currentUser.getFullName());
+        stage.setTitle("Betegnyilvántartó Rendszer - " + currentUser.getFullName());
 
         BorderPane borderPane = new BorderPane();
 
@@ -98,7 +108,7 @@ public class MainWindow {
                     List<Examination> vizsgalatok = patientService.getExaminationsByPatientId(selectedPatient.getPatientId());
                     ExaminationListWindow examWindow = new ExaminationListWindow(vizsgalatok);
                     examWindow.show();
-                } catch (Exception ex) {
+                } catch (SecurityException ex) {
                     showAlert("Hiba", "Nem sikerült betölteni a vizsgálatokat: " + ex.getMessage());
                 }
             } else {
@@ -135,7 +145,6 @@ public class MainWindow {
         logoutItem.setOnAction(e -> {
             authService.logout();
             LoginWindow loginWindow = new LoginWindow();
-            //loginWindow.setAuthService(authService);
             loginWindow.start(stage);
         });
         userMenu.getItems().add(logoutItem);
@@ -179,7 +188,7 @@ public class MainWindow {
         TableColumn<Patient, String> tajCol = new TableColumn<>("TAJ szám");
         tajCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getTajSzam()));
 
-        patientTable.getColumns().addAll(idCol, nameCol, tajCol);
+        patientTable.getColumns().addAll(Arrays.asList(idCol, nameCol, tajCol));
         patientTable.setItems(patientData);
 
         Button detailsButton = new Button("Részletek");
